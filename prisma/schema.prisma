@@ -1,0 +1,249 @@
+// Bank App — simulation-only MVP schema.
+// Money is stored as integer cents everywhere. Percentages use basis points.
+// SQLite has no native enums, so enum-like columns are String and constrained
+// by the TypeScript unions / Zod schemas in src/domain.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String?
+  displayName  String?
+  softDeletedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  accounts   Account[]
+  categories Category[]
+  pockets    Pocket[]
+  jobs       Job[]
+}
+
+// Simulated source of money. MVP: exactly one "Main Account" per user.
+model Account {
+  id                 String   @id @default(cuid())
+  userId             String
+  name               String
+  institutionName    String?
+  accountType        String   @default("manual_simulated")
+  currency           String   @default("USD")
+  balanceCents       Int
+  isConnected        Boolean  @default(false)
+  connectionProvider String?
+  externalAccountId  String?
+  isMain             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Category {
+  id                    String   @id @default(cuid())
+  userId                String
+  name                  String
+  description           String?
+  sortOrder             Int      @default(0)
+  categoryPriority      Int?
+  allocationBasisPoints Int? // share of new money routed to this category
+  unallocatedCents      Int      @default(0)
+  status                String   @default("active") // active | archived
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id])
+  pockets Pocket[]
+
+  @@index([userId])
+}
+
+model Pocket {
+  id                    String    @id @default(cuid())
+  userId                String
+  categoryId            String
+  linkedAccountId       String?
+  name                  String
+  description           String?
+  pocketType            String    @default("one_time_goal")
+  isOverflow            Boolean   @default(false) // the category's auto-managed catch-all pocket
+  status                String    @default("active") // draft|active|paused|fully_funded|purchased|cancelled|archived
+  targetAmountCents     Int?
+  currentBalanceCents   Int       @default(0)
+  allocationBasisPoints Int? // share of category money routed to this pocket
+  globalPriority        Int?
+  categoryPriority      Int?
+  lockUntilDate         DateTime?
+  targetBuyDate         DateTime?
+  monthlyPeriod         String?
+  dueDay                Int?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  archivedAt            DateTime?
+
+  user     User     @relation(fields: [userId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@index([userId])
+  @@index([categoryId])
+}
+
+// User-facing record of a deposit / purchase / expense / refund / adjustment.
+model Transaction {
+  id                    String   @id @default(cuid())
+  userId                String
+  accountId             String
+  amountCents           Int
+  transactionType       String // income|payback|refund|expense|transfer|manual_adjustment|purchase
+  transactionDate       DateTime @default(now())
+  description           String?
+  merchantName          String?
+  externalTransactionId String?
+  status                String   @default("posted")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Machine-readable grouping of one money-changing action. Required for exact undo.
+model MoneyMovementBatch {
+  id             String   @id @default(cuid())
+  userId         String
+  transactionId  String?
+  batchType      String // PAYCHECK_DEPOSIT | PAYBACK_RESTORE | MANUAL_SET_ASIDE | ... | *_REVERSAL
+  status         String   @default("applied") // pending|applied|partially_reversed|reversed|failed
+  originalBatchId String?
+  idempotencyKey String?
+  note           String?
+  metadataJson   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  movements       MoneyMovement[]
+  originalBatch   MoneyMovementBatch?  @relation("BatchReversal", fields: [originalBatchId], references: [id])
+  reversalBatches MoneyMovementBatch[] @relation("BatchReversal")
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId])
+  @@index([transactionId])
+}
+
+// Atomic balance effect inside a batch. Source of truth for reversals.
+model MoneyMovement {
+  id                   String   @id @default(cuid())
+  batchId              String
+  movementType         String // MAIN_ACCOUNT_INCREASE | SET_ASIDE_TO_POCKET | ...
+  sourceType           String? // main_account|pocket|free_to_spend|category_unallocated|external
+  sourceId             String?
+  destinationType      String?
+  destinationId        String?
+  amountCents          Int
+  reversible           Boolean  @default(true)
+  originalMovementId   String?
+  reversedByMovementId String?
+  metadataJson         String?
+  createdAt            DateTime @default(now())
+
+  batch MoneyMovementBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+}
+
+model ActivityLog {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  message       String?
+  amountCents   Int?
+  accountId     String?
+  categoryId    String?
+  pocketId      String?
+  transactionId String?
+  batchId       String?
+  metadataJson  String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  type        String
+  title       String
+  message     String
+  payloadJson String?
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// MVP funding plan: category split -> pocket split, expressed as basis points.
+model FundingPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  isActive  Boolean  @default(false)
+  mode      String   @default("percentage")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rules FundingRule[]
+
+  @@index([userId])
+}
+
+model FundingRule {
+  id              String   @id @default(cuid())
+  fundingPlanId   String
+  ruleType        String // category_percentage | pocket_percentage | free_to_spend
+  stageOrder      Int      @default(0)
+  destinationType String // category | pocket | free_to_spend
+  destinationId   String?
+  basisPoints     Int?
+  fixedAmountCents Int?
+  priorityOrder   Int?
+  active          Boolean  @default(true)
+  metadataJson    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  plan FundingPlan @relation(fields: [fundingPlanId], references: [id], onDelete: Cascade)
+
+  @@index([fundingPlanId])
+}
+
+// Recurring income source. Each due pay date generates ONE paycheck deposit
+// through the normal paycheck flow (idempotent via MoneyMovementBatch's
+// (userId, idempotencyKey) unique constraint). amountCents is after-tax net pay.
+model Job {
+  id              String    @id @default(cuid())
+  userId          String
+  name            String
+  amountCents     Int // after-tax net pay per paycheck, integer cents
+  payFrequency    String // weekly | biweekly | monthly | semimonthly
+  firstPayDate    DateTime // anchor + start boundary; no paychecks before this
+  semiMonthlyDay1 Int? // semimonthly only (e.g. 1)
+  semiMonthlyDay2 Int? // semimonthly only (e.g. 15)
+  autoDisperse    Boolean   @default(true)
+  status          String    @default("active") // active | paused | archived
+  lastPaidDate    DateTime? // latest pay date already processed by catch-up
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}

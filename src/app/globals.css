@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-slate-50 text-ink antialiased;
+}
+
+/* Visible keyboard focus for links and any element that opts in. Buttons and
+   inputs carry their own focus-visible rings via the component classes. */
+@layer base {
+  a:focus-visible,
+  [tabindex]:focus-visible {
+    @apply rounded-lg outline-none ring-2 ring-brand-400 ring-offset-2 ring-offset-slate-50;
+  }
+}
+
+/* Money and other figures read better with tabular figures. */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-200/50;
+  }
+  .card-interactive {
+    @apply card transition duration-150 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md;
+  }
+
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-1
+      active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700;
+  }
+  .btn-secondary {
+    @apply btn border border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50;
+  }
+  .btn-ghost {
+    @apply btn text-muted hover:bg-slate-100 hover:text-ink;
+  }
+  .btn-danger {
+    @apply btn border border-red-200 bg-white text-danger hover:border-red-300 hover:bg-red-50;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-ink shadow-sm transition
+      placeholder:text-slate-400 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-slate-700;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+}
+
+/* Modal enter animations (respect reduced-motion). */
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-overlay {
+  animation: overlay-in 150ms ease-out;
+}
+.animate-dialog {
+  animation: dialog-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-overlay,
+  .animate-dialog {
+    animation: none;
+  }
+  .btn {
+    @apply active:scale-100;
+  }
+}
