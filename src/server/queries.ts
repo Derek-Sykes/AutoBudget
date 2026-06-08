@@ -25,6 +25,7 @@ export interface CategoryView {
   id: string;
   name: string;
   description: string | null;
+  status: string;
   setAsideCents: number;
   targetTotalCents: number;
   activeCount: number;
@@ -36,6 +37,7 @@ function toCategoryView(category: {
   id: string;
   name: string;
   description: string | null;
+  status: string;
   pockets: PocketView[];
 }): CategoryView {
   const live = category.pockets.filter((p) => SET_ASIDE_STATUSES.includes(p.status));
@@ -43,6 +45,7 @@ function toCategoryView(category: {
     id: category.id,
     name: category.name,
     description: category.description,
+    status: category.status,
     // Overflow balances count toward Set Aside, but not toward pocket counts.
     setAsideCents: live.reduce((s, p) => s + p.currentBalanceCents, 0),
     targetTotalCents: live.reduce((s, p) => s + (p.targetAmountCents ?? 0), 0),
@@ -74,6 +77,7 @@ export async function getDashboardData(userId: string) {
         id: c.id,
         name: c.name,
         description: c.description,
+        status: c.status,
         pockets: c.pockets.map(mapPocket),
       }),
     ),
@@ -93,6 +97,7 @@ export async function getCategoryDetail(userId: string, categoryId: string) {
       id: category.id,
       name: category.name,
       description: category.description,
+      status: category.status,
       pockets: category.pockets.map(mapPocket),
     }),
   };
@@ -248,7 +253,7 @@ export async function getIncomeSummary(userId: string, now: Date = new Date()): 
 }
 
 export async function getActivityFeed(userId: string) {
-  const [logs, notifications, batches] = await Promise.all([
+  const [logs, notifications, batches, paycheckBatches, correctionBatches] = await Promise.all([
     prisma.activityLog.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
@@ -268,6 +273,54 @@ export async function getActivityFeed(userId: string) {
       orderBy: { createdAt: "desc" },
       take: 25,
     }),
+    prisma.moneyMovementBatch.findMany({
+      where: { userId, batchType: "PAYCHECK_DEPOSIT", status: "applied" },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+      include: { movements: true },
+    }),
+    prisma.moneyMovementBatch.findMany({
+      where: { userId, batchType: "PAYCHECK_CORRECTION", status: "applied" },
+      include: { movements: true },
+    }),
   ]);
-  return { logs, notifications, reversibleBatches: batches };
+
+  const correctionDeltaByPaycheck = new Map<string, number>();
+  for (const batch of correctionBatches) {
+    let correctsBatchId: string | null = null;
+    if (batch.metadataJson) {
+      try {
+        const metadata = JSON.parse(batch.metadataJson) as { correctsBatchId?: string };
+        correctsBatchId = metadata.correctsBatchId ?? null;
+      } catch {
+        correctsBatchId = null;
+      }
+    }
+    if (!correctsBatchId) continue;
+    const delta = batch.movements.reduce((sum, movement) => {
+      if (movement.movementType === "MAIN_ACCOUNT_INCREASE") return sum + movement.amountCents;
+      if (movement.movementType === "MAIN_ACCOUNT_DECREASE") return sum - movement.amountCents;
+      return sum;
+    }, 0);
+    correctionDeltaByPaycheck.set(
+      correctsBatchId,
+      (correctionDeltaByPaycheck.get(correctsBatchId) ?? 0) + delta,
+    );
+  }
+
+  const correctablePaychecks = paycheckBatches.map((batch) => {
+    const originalAmountCents = batch.movements
+      .filter((movement) => movement.movementType === "MAIN_ACCOUNT_INCREASE")
+      .reduce((sum, movement) => sum + movement.amountCents, 0);
+    return {
+      id: batch.id,
+      note: batch.note,
+      createdAt: batch.createdAt,
+      originalAmountCents,
+      currentAmountCents: originalAmountCents + (correctionDeltaByPaycheck.get(batch.id) ?? 0),
+      isPayrollGenerated: batch.idempotencyKey?.startsWith("payroll:") ?? false,
+    };
+  });
+
+  return { logs, notifications, reversibleBatches: batches, correctablePaychecks };
 }

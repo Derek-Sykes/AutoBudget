@@ -1,4 +1,4 @@
-// Bank App — simulation-only MVP schema.
+// AutoBudget - simulation-only MVP schema.
 // Money is stored as integer cents everywhere. Percentages use basis points.
 // SQLite has no native enums, so enum-like columns are String and constrained
 // by the TypeScript unions / Zod schemas in src/domain.

@@ -1,6 +1,7 @@
 import { requireCurrentUserId } from "@/server/currentUser";
 import { getActivityFeed } from "@/server/queries";
 import { ConfirmButton } from "@/components/ConfirmButton";
+import { PaycheckCorrectionDialog } from "@/components/PaycheckCorrectionDialog";
 import {
   clearNotificationAction,
   markAllNotificationsReadAction,
@@ -19,6 +20,7 @@ const BATCH_LABELS: Record<string, string> = {
   PURCHASE: "Purchase",
   CANCEL_GOAL: "Cancelled goal",
   MANUAL_ADJUSTMENT: "Manual adjustment",
+  PAYCHECK_CORRECTION: "Paycheck correction",
 };
 
 function when(d: Date) {
@@ -32,7 +34,8 @@ function when(d: Date) {
 
 export default async function ActivityPage() {
   const userId = await requireCurrentUserId();
-  const { logs, notifications, reversibleBatches } = await getActivityFeed(userId);
+  const { logs, notifications, reversibleBatches, correctablePaychecks } =
+    await getActivityFeed(userId);
 
   return (
     <div className="space-y-8">
@@ -107,8 +110,8 @@ export default async function ActivityPage() {
         ) : (
           <div className="space-y-2">
             {reversibleBatches.map((b) => (
-              <div key={b.id} className="card flex items-center justify-between">
-                <div>
+              <div key={b.id} className="card flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
                   <span className="font-medium">{BATCH_LABELS[b.batchType] ?? b.batchType}</span>
                   {b.note && <span className="text-sm text-muted"> — {b.note}</span>}
                   <div className="text-xs text-muted">{when(b.createdAt)}</div>
@@ -127,6 +130,37 @@ export default async function ActivityPage() {
       </section>
 
       <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Correct a paycheck</h2>
+        <p className="text-sm text-muted">
+          Adjusting a paycheck creates a new correction entry and keeps the original history.
+        </p>
+        {correctablePaychecks.length === 0 ? (
+          <div className="card text-muted">No paychecks to correct yet.</div>
+        ) : (
+          <div className="space-y-2">
+            {correctablePaychecks.map((b) => (
+              <div key={b.id} className="card flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="font-medium">Paycheck deposit</span>
+                  {b.note && <span className="text-sm text-muted"> - {b.note}</span>}
+                  <div className="text-xs text-muted">
+                    {when(b.createdAt)} | Current {formatCents(b.currentAmountCents)}
+                  </div>
+                </div>
+                <PaycheckCorrectionDialog
+                  batchId={b.id}
+                  note={b.note}
+                  originalAmountCents={b.originalAmountCents}
+                  currentAmountCents={b.currentAmountCents}
+                  isPayrollGenerated={b.isPayrollGenerated}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-3">
         <h2 className="text-lg font-semibold">History</h2>
         <div className="card divide-y divide-slate-100 p-0">
           {logs.length === 0 ? (
@@ -135,7 +169,7 @@ export default async function ActivityPage() {
             logs.map((l) => (
               <div
                 key={l.id}
-                className="flex items-center justify-between gap-3 px-5 py-3 transition hover:bg-slate-50"
+                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50 sm:px-5"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm">{l.message ?? l.type}</p>

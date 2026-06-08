@@ -84,12 +84,12 @@ export function Overlay({ title, onClose, children }: { title: string; onClose: 
 
   return (
     <div
-      className="animate-overlay fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+      className="animate-overlay fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-3 pt-6 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
         ref={dialogRef}
-        className="animate-dialog w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl outline-none"
+        className="animate-dialog max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-lg border border-slate-200 bg-white p-4 shadow-xl outline-none sm:p-5"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

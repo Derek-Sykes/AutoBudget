@@ -146,7 +146,7 @@ export function FundingPlanEditor({ data }: { data: FundingPlanEditorData }) {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button type="button" className="btn-ghost" onClick={distributeTopEvenly}>
             Distribute evenly
           </button>
@@ -168,7 +168,7 @@ export function FundingPlanEditor({ data }: { data: FundingPlanEditorData }) {
       )}
 
       {/* Free to Spend share */}
-      <div className="card flex items-center justify-between">
+      <div className="card flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-semibold">Free to Spend</p>
           <p className="text-sm text-muted">Share of each deposit left unallocated.</p>
@@ -194,7 +194,7 @@ export function FundingPlanEditor({ data }: { data: FundingPlanEditorData }) {
         const overflowBp = Math.max(0, 10000 - pocketTotalBp);
         return (
           <div key={c.categoryId} className="card space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="font-semibold">{c.name}</p>
               <PercentInput
                 value={c.weight}
@@ -220,7 +220,7 @@ export function FundingPlanEditor({ data }: { data: FundingPlanEditorData }) {
                   </button>
                 </div>
                 {c.pockets.map((p) => (
-                  <div key={p.pocketId} className="flex items-center justify-between">
+                  <div key={p.pocketId} className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm">{p.name}</span>
                     <PercentInput
                       value={p.weight}

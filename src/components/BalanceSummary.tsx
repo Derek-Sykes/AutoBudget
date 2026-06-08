@@ -17,17 +17,16 @@ function Figure({
 }) {
   return (
     <div
-      className={`flex-1 rounded-xl p-4 ${
+      className={`min-w-0 rounded-lg p-3 sm:flex-1 sm:p-4 ${
         highlight ? "bg-brand-50 ring-1 ring-inset ring-brand-100" : ""
       }`}
-      style={{ minWidth: "8.5rem" }}
     >
       <div className="mb-1 flex items-center gap-2 text-sm text-muted">
         <span className={highlight ? "text-brand-600" : "text-slate-400"}>{icon}</span>
         {label}
       </div>
       <div
-        className={`text-2xl font-bold tabular-nums sm:text-3xl ${
+        className={`break-words text-xl font-bold tabular-nums sm:text-3xl ${
           highlight ? "text-brand-700" : "text-ink"
         }`}
       >
@@ -40,7 +39,7 @@ function Figure({
 
 function Op({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-center px-1 text-2xl font-light text-slate-500">
+    <div className="hidden items-center justify-center px-1 text-2xl font-light text-slate-500 sm:flex">
       {children}
     </div>
   );
@@ -48,7 +47,7 @@ function Op({ children }: { children: React.ReactNode }) {
 
 export function BalanceSummary({ balances }: { balances: DashboardBalances }) {
   return (
-    <div className="card flex flex-wrap items-stretch gap-2">
+    <div className="card grid gap-2 sm:flex sm:flex-wrap sm:items-stretch">
       <Figure
         icon={<WalletIcon className="h-4 w-4" />}
         label="Main Account"

@@ -35,12 +35,18 @@ Coverage includes:
 - balance derivation
 - manual set-aside to pockets and categories
 - paycheck deposit and auto-disperse
+- paycheck correction for manual and payroll-generated deposits, including negative Free to Spend exception coverage
 - payback/refund restoration
 - purchase, cancel, and transfer flows
+- Overflow lifecycle guards and archived-category restrictions
 - manual adjustments
 - recurring payroll scheduling and catch-up idempotency
+- funding-plan auto-even split when a zeroed category becomes funded
 - safe reversal rules
 - signup, login credential checks, password hashing, session expiry, and session invalidation
+- account deletion validation, demo-account protection, session invalidation, and cross-user isolation
+- server-side capitalization of user-created names
+- in-app confirmation dialog regression coverage for native browser popups
 - protected-route/action auth guards
 - cross-user isolation for categories, pockets, ledger reversal, notifications, jobs, payroll, funding-plan editor data, and Overflow pockets
 

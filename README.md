@@ -1,6 +1,6 @@
-# SetAside / AutoBudget
+# AutoBudget
 
-SetAside is a simulation-only budgeting MVP from the `Derek-Sykes/AutoBudget` GitHub repo. It helps each logged-in user set money aside into virtual categories and pockets before spending, so the app can show what is truly free to spend.
+AutoBudget is a simulation-only budgeting MVP from the `Derek-Sykes/AutoBudget` GitHub repo. It helps each logged-in user set money aside into virtual categories and pockets before spending, so the app can show what is truly free to spend.
 
 Core rule:
 
@@ -58,8 +58,8 @@ MOCK_MAIN_ACCOUNT_STARTING_BALANCE_CENTS=500000
 - `/categories/[id]` - category detail, pocket actions, set-aside, transfers, purchase/cancel, edit/archive flows
 - `/jobs` - recurring income sources and payroll catch-up controls
 - `/funding-plan` - paycheck allocation plan editor
-- `/activity` - notifications, activity history, and safe reversal controls
-- `/account` - display name, password change, and logout
+- `/activity` - notifications, activity history, paycheck correction, and safe reversal controls
+- `/account` - display name, password change, logout, and non-demo account deletion
 - `/login` and `/signup` - local account access
 
 `/` is public. Protected app routes redirect unauthenticated users to `/login`.
@@ -92,13 +92,18 @@ The GitHub checkout currently includes:
 - categories, pockets, overflow pockets, and category unallocated amounts
 - manual set-aside into a pocket or whole category
 - paycheck deposits with preview and auto-disperse through the funding plan
+- paycheck amount correction that preserves ledger history
 - funding-plan editor with category and pocket percentages in basis points
+- automatic even pocket split when a 0% category is first funded and all active normal pockets are 0%
 - transfers from pocket to pocket, Free to Spend, or whole category
 - payback/refund restoration
 - purchase and cancel pocket flows
 - manual adjustment deposit type
 - recurring jobs and payroll catch-up with idempotent paycheck generation
+- account deletion for non-demo users, with password plus `DELETE` confirmation
+- server-side capitalization for user-created display, category, pocket, and job names
 - notifications, activity history, and safe reversal of clean batches
+- in-app confirmation dialogs instead of native browser popups
 - Prisma schema, seed script, service layer, server actions, app routes, and tests
 
 ## Money Rules
@@ -109,7 +114,8 @@ The GitHub checkout currently includes:
 - Route every balance-changing action through the ledger in `src/server/services/ledger.ts`.
 - Create `MoneyMovementBatch` and `MoneyMovement` rows for balance changes.
 - Write `ActivityLog` entries for user-readable history.
-- Prevent negative Main Account, pocket, and Free to Spend states.
+- Prevent negative Main Account and pocket states.
+- Prevent normal actions from making derived Free to Spend negative. Paycheck corrections have a narrow exception: if the old paycheck money is no longer available, the correction may make derived Free to Spend negative while pockets remain non-negative.
 - Keep paycheck/income deposits distinct from payback/refund deposits.
 - Reverse by creating opposite movement batches; do not delete or rewrite old ledger rows.
 

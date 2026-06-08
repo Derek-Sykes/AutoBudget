@@ -8,6 +8,7 @@ import { MoneyError, parseDollarsToCents } from "@/domain/money";
 import { LedgerError } from "@/server/services/ledger";
 import { setAsideToCategory, setAsideToPocket } from "@/server/services/moneyMovement";
 import { addPaycheck, previewPaycheck } from "@/server/services/paycheck";
+import { correctPaycheck } from "@/server/services/paycheckCorrection";
 import { addPayback } from "@/server/services/payback";
 import { purchasePocket, cancelPocket } from "@/server/services/purchaseCancel";
 import { transfer } from "@/server/services/transfer";
@@ -203,6 +204,25 @@ export async function reverseAction(_prev: ActionState, fd: FormData): Promise<A
   try {
     const userId = await getCurrentUserId();
     await reverseBatchById({ userId, batchId: str(fd, "batchId") });
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function correctPaycheckAction(
+  _prev: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  try {
+    const userId = await getCurrentUserId();
+    await correctPaycheck({
+      userId,
+      batchId: str(fd, "batchId"),
+      correctedAmountCents: parseDollarsToCents(str(fd, "correctedAmount")),
+      updateFutureJobAmount: str(fd, "updateFutureJobAmount") === "on",
+    });
     refresh();
     return { ok: true };
   } catch (e) {

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import {
   AuthError,
   changeCurrentUserPassword,
+  deleteCurrentUserAccount,
   logIn,
   logOut,
   requireCurrentUserId,
@@ -90,4 +91,22 @@ export async function changePasswordAction(
   } catch (error) {
     return fail(error);
   }
+}
+
+export async function deleteAccountAction(
+  _prev: AuthActionState,
+  fd: FormData,
+): Promise<AuthActionState> {
+  try {
+    const userId = await requireCurrentUserId();
+    await deleteCurrentUserAccount({
+      userId,
+      currentPassword: str(fd, "currentPassword"),
+      confirmation: str(fd, "confirmation"),
+    });
+  } catch (error) {
+    return fail(error);
+  }
+  revalidatePath("/", "layout");
+  redirect("/signup");
 }

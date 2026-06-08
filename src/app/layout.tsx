@@ -8,7 +8,7 @@ import { ensurePayrollCurrent } from "@/server/services/payroll";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SetAside — know what's truly free to spend",
+  title: "AutoBudget - know what's truly free to spend",
   description: "A simulation-only budgeting app that sets money aside into virtual pockets.",
 };
 
@@ -31,16 +31,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             Skip to content
           </a>
           <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur">
-            <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-2 px-4 py-3">
+            <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-3 py-3 sm:px-4">
               <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2 font-semibold">
                 <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white shadow-sm shadow-brand-600/30">
-                  S
+                  A
                 </span>
-                <span>SetAside</span>
+                <span>AutoBudget</span>
                 <span className="badge hidden bg-slate-100 text-muted sm:inline-flex">Simulation</span>
               </Link>
               {user ? (
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2 sm:flex-none sm:gap-3">
                   <NavLinks unreadCount={unreadCount} />
                   <span className="hidden max-w-40 truncate text-xs text-muted sm:inline">
                     {user.displayName || user.email}
@@ -63,7 +63,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               )}
             </div>
           </header>
-          <main id="main-content" tabIndex={-1} className="mx-auto max-w-6xl px-4 py-6 outline-none">
+          <main id="main-content" tabIndex={-1} className="mx-auto max-w-6xl px-3 py-4 outline-none sm:px-4 sm:py-6">
             {children}
           </main>
           <footer className="mx-auto max-w-6xl px-4 py-8 text-center text-xs text-muted">

@@ -155,6 +155,7 @@ export async function addPaycheck(input: AddPaycheckInput) {
       transactionId: transaction.id,
       idempotencyKey: input.idempotencyKey,
       note: input.note,
+      metadata: { autoDisperse },
       movements,
     });
 
