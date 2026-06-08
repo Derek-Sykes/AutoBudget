@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/funding-plan", label: "Funding plan" },
   { href: "/activity", label: "Activity" },
   { href: "/account", label: "Account" },
+  { href: "/about", label: "About" },
 ];
 
 export function NavLinks({ unreadCount = 0 }: { unreadCount?: number }) {

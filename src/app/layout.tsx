@@ -53,6 +53,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </div>
               ) : (
                 <nav className="flex items-center gap-2 text-sm">
+                  <Link className="btn-ghost px-3 py-1.5" href="/about">
+                    About
+                  </Link>
                   <Link className="btn-ghost px-3 py-1.5" href="/login">
                     Log in
                   </Link>
