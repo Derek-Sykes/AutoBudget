@@ -7,7 +7,6 @@ import { LedgerError } from "@/server/services/ledger";
 import { makeCategory, makeFundingPlan, makeOverflow, makePocket, seedUser } from "./factories";
 
 const pocket = (id: string) => prisma.pocket.findUniqueOrThrow({ where: { id } });
-const account = (id: string) => prisma.account.findUniqueOrThrow({ where: { id } });
 
 async function pair() {
   const { userId, accountId } = await seedUser(500_000);
