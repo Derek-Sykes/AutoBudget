@@ -58,7 +58,8 @@ That command runs the repo-local reset script, which:
 
 The seed creates:
 
-- demo user `demo@example.com`
+- demo user `demo@autobudget.local`
+- demo password `password123`
 - one simulated `Main Account`
 - categories and pockets
 - one Overflow pocket per category
@@ -74,12 +75,24 @@ npm run dev
 
 Open http://localhost:3100.
 
+Local demo login:
+
+```txt
+email: demo@autobudget.local
+password: password123
+```
+
+These credentials are for local development only.
+
 Main routes:
 
+- http://localhost:3100/login
+- http://localhost:3100/signup
 - http://localhost:3100/dashboard
 - http://localhost:3100/jobs
 - http://localhost:3100/funding-plan
 - http://localhost:3100/activity
+- http://localhost:3100/account
 
 ## Useful Reset Commands
 

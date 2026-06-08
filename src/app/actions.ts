@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getCurrentUserId } from "@/server/currentUser";
+import { AuthError } from "@/server/auth";
 import { MoneyError, parseDollarsToCents } from "@/domain/money";
 import { LedgerError } from "@/server/services/ledger";
 import { setAsideToCategory, setAsideToPocket } from "@/server/services/moneyMovement";
@@ -34,6 +35,7 @@ import type { JobStatus, PayFrequency, PocketType, RestoreMode } from "@/domain/
 export type ActionState = { ok: boolean; error?: string };
 
 function fail(e: unknown): ActionState {
+  if (e instanceof AuthError) return { ok: false, error: e.message };
   if (e instanceof LedgerError || e instanceof MoneyError) return { ok: false, error: e.message };
   if (e instanceof z.ZodError) return { ok: false, error: e.errors[0]?.message ?? "Invalid input." };
   console.error(e);

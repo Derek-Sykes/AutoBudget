@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentUserId } from "@/server/currentUser";
+import { requireCurrentUserId } from "@/server/currentUser";
 import {
   getActivePockets,
   getDashboardData,
@@ -17,7 +17,7 @@ import { formatCents } from "@/domain/money";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const userId = await getCurrentUserId();
+  const userId = await requireCurrentUserId();
   const [{ balances, categories }, activePockets, recentPurchases, incomeSummary] =
     await Promise.all([
       getDashboardData(userId),

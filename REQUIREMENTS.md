@@ -13,10 +13,21 @@ Free to Spend is derived from stored balances. It must not be independently stor
 ## MVP Boundaries
 
 - The MVP has one simulated Main Account per user.
-- The app operates as one seeded demo user until auth is intentionally added.
+- The app uses local email/password accounts and keeps a seeded demo account for development.
 - The starting balance comes from `MOCK_MAIN_ACCOUNT_STARTING_BALANCE_CENTS` in `src/config/mockBank.ts`, with an optional local environment override.
 - The app does not link to banks, Plaid, external transactions, or real money movement.
 - Multiple real source accounts are deferred.
+
+## Auth Rules
+
+- Store password hashes only; never store plaintext passwords.
+- Use expiring server-side sessions.
+- Session cookies must be HTTP-only.
+- Do not store session tokens or secrets in localStorage.
+- Signup must create safe default user data: Main Account, starter categories, Overflow pockets, and a default funding plan.
+- All protected pages and server actions must resolve the user from the current session.
+- Every query and mutation must be scoped to the authenticated user.
+- Do not trust form or route ids without verifying ownership by user id.
 
 ## Money Rules
 

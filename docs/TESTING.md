@@ -25,7 +25,7 @@ npm run build
 
 ## Test Suite
 
-The current suite has 128 tests across 11 test files.
+The suite includes pure domain tests, service integration tests, auth tests, and user-isolation tests.
 
 Coverage includes:
 
@@ -40,6 +40,9 @@ Coverage includes:
 - manual adjustments
 - recurring payroll scheduling and catch-up idempotency
 - safe reversal rules
+- signup, login credential checks, password hashing, session expiry, and session invalidation
+- protected-route/action auth guards
+- cross-user isolation for categories, pockets, ledger reversal, notifications, jobs, payroll, funding-plan editor data, and Overflow pockets
 
 ## Test Database
 

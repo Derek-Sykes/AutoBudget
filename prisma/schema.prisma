@@ -15,7 +15,7 @@ datasource db {
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
-  passwordHash String?
+  passwordHash String
   displayName  String?
   softDeletedAt DateTime?
   createdAt    DateTime  @default(now())
@@ -25,6 +25,20 @@ model User {
   categories Category[]
   pockets    Pocket[]
   jobs       Job[]
+  sessions   Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // Simulated source of money. MVP: exactly one "Main Account" per user.

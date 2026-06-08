@@ -1,4 +1,4 @@
-import { getCurrentUserId } from "@/server/currentUser";
+import { requireCurrentUserId } from "@/server/currentUser";
 import { getJobsView, type JobView } from "@/server/queries";
 import { JobDialog } from "@/components/JobDialog";
 import { ConfirmButton } from "@/components/ConfirmButton";
@@ -26,7 +26,7 @@ function fmtDate(iso: string | null): string {
 }
 
 export default async function JobsPage() {
-  const userId = await getCurrentUserId();
+  const userId = await requireCurrentUserId();
   const jobs = await getJobsView(userId);
   const active = jobs.filter((j) => j.status === "active");
   const paused = jobs.filter((j) => j.status === "paused");

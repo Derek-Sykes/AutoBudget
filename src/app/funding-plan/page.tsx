@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { getCurrentUserId } from "@/server/currentUser";
+import { requireCurrentUserId } from "@/server/currentUser";
 import { getFundingPlanEditorData } from "@/server/services/fundingPlanService";
 import { FundingPlanEditor } from "@/components/FundingPlanEditor";
 
 export const dynamic = "force-dynamic";
 
 export default async function FundingPlanPage() {
-  const userId = await getCurrentUserId();
+  const userId = await requireCurrentUserId();
   const data = await getFundingPlanEditorData(userId);
 
   return (

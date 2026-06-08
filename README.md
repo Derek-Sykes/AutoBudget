@@ -1,6 +1,6 @@
 # SetAside / AutoBudget
 
-SetAside is a simulation-only budgeting MVP from the `Derek-Sykes/AutoBudget` GitHub repo. It helps a single demo user set money aside into virtual categories and pockets before spending, so the app can show what is truly free to spend.
+SetAside is a simulation-only budgeting MVP from the `Derek-Sykes/AutoBudget` GitHub repo. It helps each logged-in user set money aside into virtual categories and pockets before spending, so the app can show what is truly free to spend.
 
 Core rule:
 
@@ -8,7 +8,7 @@ Core rule:
 Free to Spend = Main Account Balance - Set Aside
 ```
 
-There is no auth, Plaid, bank linking, transaction sync, or real money movement in the MVP.
+The app has local email/password accounts for development use. There is no OAuth, Plaid, bank linking, transaction sync, or real money movement in the MVP.
 
 ## Stack
 
@@ -30,7 +30,14 @@ npm run dev
 
 The dev server runs on http://localhost:3100.
 
-The seeded MVP user is `demo@example.com`.
+Seeded local demo login:
+
+```txt
+email: demo@autobudget.local
+password: password123
+```
+
+These demo credentials are for local development only. Do not treat them as production-safe.
 
 ## Environment
 
@@ -52,8 +59,10 @@ MOCK_MAIN_ACCOUNT_STARTING_BALANCE_CENTS=500000
 - `/jobs` - recurring income sources and payroll catch-up controls
 - `/funding-plan` - paycheck allocation plan editor
 - `/activity` - notifications, activity history, and safe reversal controls
+- `/account` - display name, password change, and logout
+- `/login` and `/signup` - local account access
 
-`/` redirects to `/dashboard`.
+`/` is public. Protected app routes redirect unauthenticated users to `/login`.
 
 ## Scripts
 
@@ -76,6 +85,8 @@ MOCK_MAIN_ACCOUNT_STARTING_BALANCE_CENTS=500000
 The GitHub checkout currently includes:
 
 - one simulated Main Account per user
+- local email/password accounts with hashed passwords and expiring HTTP-only session cookies
+- seeded development demo account
 - mock starting balance configuration
 - dashboard balances with derived Free to Spend
 - categories, pockets, overflow pockets, and category unallocated amounts
@@ -120,10 +131,10 @@ npm test
 npm run build
 ```
 
-The current test suite has 128 tests across 11 test files, covering pure money/allocation logic and service-level money flows against a dedicated SQLite test database.
+The current test suite covers pure money/allocation logic, service-level money flows, local auth behavior, and user-isolation checks against a dedicated SQLite test database.
 
 Note: `npm run db:reset` is destructive. It uses `scripts/reset-db.mjs` to delete and recreate the configured SQLite database because direct `prisma db push` currently fails in this Windows workspace with a schema-engine error after schema validation succeeds.
 
 ## Deferred Scope
 
-Deferred work includes auth, Plaid/bank linking, multiple real accounts, real money movement, transaction sync, projections, a full wage calculator, monthly-budget reset automation, priority/deadline funding modes, manual-adjustment UI polish, and repair flows for non-clean reversals.
+Deferred work includes OAuth/social login, email verification, password reset, Plaid/bank linking, multiple real accounts, real money movement, transaction sync, projections, a full wage calculator, monthly-budget reset automation, priority/deadline funding modes, manual-adjustment UI polish, and repair flows for non-clean reversals.
