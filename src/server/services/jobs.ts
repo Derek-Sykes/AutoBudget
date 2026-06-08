@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { normalizeHumanName } from "@/domain/names";
 import { LedgerError } from "./ledger";
 import { logActivity } from "./activity";
 import { JOB_STATUSES, PAY_FREQUENCIES, type JobStatus, type PayFrequency } from "@/domain/types";
@@ -25,7 +26,7 @@ interface NormalizedJob {
 }
 
 function validate(input: JobInput): NormalizedJob {
-  const name = input.name?.trim();
+  const name = normalizeHumanName(input.name ?? "");
   if (!name) throw new LedgerError("Job name is required.");
 
   if (!Number.isInteger(input.amountCents) || input.amountCents <= 0) {

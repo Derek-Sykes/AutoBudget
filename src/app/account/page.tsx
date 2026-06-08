@@ -1,5 +1,6 @@
 import { logoutAction } from "@/app/auth-actions";
-import { PasswordForm, ProfileForm } from "@/components/AuthForms";
+import { DeleteAccountForm, PasswordForm, ProfileForm } from "@/components/AuthForms";
+import { DEMO_USER_EMAIL } from "@/config/mockBank";
 import { requireCurrentUser } from "@/server/currentUser";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,7 @@ export default async function AccountPage() {
         <ProfileForm displayName={user.displayName ?? ""} />
         <PasswordForm />
       </div>
+      <DeleteAccountForm isDemo={user.email === DEMO_USER_EMAIL} />
     </div>
   );
 }

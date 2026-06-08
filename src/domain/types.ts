@@ -53,6 +53,7 @@ export const BATCH_TYPES = [
   "CANCEL_GOAL",
   "MANUAL_ADJUSTMENT",
   "AUTO_ALLOCATION",
+  "PAYCHECK_CORRECTION",
   "REVERSAL",
 ] as const;
 export type BatchType = (typeof BATCH_TYPES)[number];
@@ -76,6 +77,8 @@ export const MOVEMENT_TYPES = [
   "PURCHASE_FROM_POCKET",
   "PURCHASE_FROM_FREE_TO_SPEND",
   "LEFT_AS_FREE_TO_SPEND",
+  "PAYCHECK_CORRECTION_TO_FREE_TO_SPEND",
+  "PAYCHECK_CORRECTION_FROM_FREE_TO_SPEND",
   "ROUNDING_LEFTOVER",
 ] as const;
 export type MovementType = (typeof MOVEMENT_TYPES)[number];
@@ -139,5 +142,7 @@ export const MOVEMENT_EFFECTS: Record<MovementType, MovementEffect> = {
   RESTORE_TO_FREE_TO_SPEND: { target: "none", direction: 1 },
   PURCHASE_FROM_FREE_TO_SPEND: { target: "none", direction: -1 },
   LEFT_AS_FREE_TO_SPEND: { target: "none", direction: 1 },
+  PAYCHECK_CORRECTION_TO_FREE_TO_SPEND: { target: "none", direction: 1 },
+  PAYCHECK_CORRECTION_FROM_FREE_TO_SPEND: { target: "none", direction: -1 },
   ROUNDING_LEFTOVER: { target: "none", direction: 1 },
 };

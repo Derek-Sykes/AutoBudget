@@ -10,7 +10,7 @@ export default async function LoginPage() {
     <div className="space-y-6">
       <div className="mx-auto max-w-md text-center">
         <h1 className="text-2xl font-bold tracking-tight">Log in</h1>
-        <p className="mt-2 text-sm text-muted">Use your SetAside account to continue.</p>
+        <p className="mt-2 text-sm text-muted">Use your AutoBudget account to continue.</p>
       </div>
       <LoginForm />
     </div>

@@ -14,7 +14,7 @@ const LINKS = [
 export function NavLinks({ unreadCount = 0 }: { unreadCount?: number }) {
   const pathname = usePathname();
   return (
-    <nav className="flex items-center gap-1 text-sm">
+    <nav className="flex flex-wrap items-center justify-end gap-1 text-sm">
       {LINKS.map((l) => {
         const active = pathname === l.href || pathname.startsWith(`${l.href}/`);
         const showBadge = l.href === "/activity" && unreadCount > 0;

@@ -1,6 +1,6 @@
-# AGENTS.md — Bank App (SetAside)
+# AGENTS.md - AutoBudget
 
-You are working on **SetAside**, a simulation-only, fintech-style budgeting app.
+You are working on **AutoBudget**, a simulation-only, fintech-style budgeting app.
 
 ## Product priority (do not break this)
 

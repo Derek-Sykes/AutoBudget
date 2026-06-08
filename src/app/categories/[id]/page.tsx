@@ -28,6 +28,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
   if (!data) notFound();
 
   const { category } = data;
+  const isArchived = category.status === "archived";
   // Overflow first, then the rest of the live pockets.
   const live = category.pockets
     .filter((p) => ["active", "paused", "fully_funded"].includes(p.status))
@@ -58,67 +59,73 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <FormDialog
-            triggerLabel="Set aside"
-            triggerClassName="btn-primary"
-            title={`Fund ${category.name}`}
-            submitLabel="Set aside"
-            action={setAsideToCategoryAction}
-            hidden={{ categoryId: category.id }}
-          >
-            <p className="text-sm text-muted">
-              Moves money from Free to Spend into this category and auto-distributes it across its
-              pockets by your funding plan. Anything left over (or that doesn&apos;t fit) goes to the
-              Overflow pocket. Your Main Account balance doesn&apos;t change.
-            </p>
-            <div>
-              <label className="label">Amount</label>
-              <input
-                name="amount"
-                aria-label="Amount to set aside into this category"
-                inputMode="decimal"
-                placeholder="$0.00"
-                className="input"
-                autoFocus
+          {isArchived ? (
+            <span className="badge bg-slate-100 text-slate-600">Archived</span>
+          ) : (
+            <>
+              <FormDialog
+                triggerLabel="Set aside"
+                triggerClassName="btn-primary"
+                title={`Fund ${category.name}`}
+                submitLabel="Set aside"
+                action={setAsideToCategoryAction}
+                hidden={{ categoryId: category.id }}
+              >
+                <p className="text-sm text-muted">
+                  Moves money from Free to Spend into this category and auto-distributes it across
+                  its pockets by your funding plan. Anything left over (or that doesn&apos;t fit) goes
+                  to the Overflow pocket. Your Main Account balance doesn&apos;t change.
+                </p>
+                <div>
+                  <label className="label">Amount</label>
+                  <input
+                    name="amount"
+                    aria-label="Amount to set aside into this category"
+                    inputMode="decimal"
+                    placeholder="$0.00"
+                    className="input"
+                    autoFocus
+                  />
+                </div>
+              </FormDialog>
+              <FormDialog
+                triggerLabel="Edit"
+                triggerClassName="btn-secondary"
+                title={`Edit ${category.name}`}
+                submitLabel="Save changes"
+                action={updateCategoryAction}
+                hidden={{ categoryId: category.id }}
+              >
+                <div>
+                  <label className="label">Name</label>
+                  <input
+                    name="name"
+                    aria-label="Category name"
+                    className="input"
+                    defaultValue={category.name}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="label">Description (optional)</label>
+                  <input
+                    name="description"
+                    aria-label="Category description"
+                    className="input"
+                    defaultValue={category.description ?? ""}
+                  />
+                </div>
+              </FormDialog>
+              <ConfirmButton
+                label="Archive"
+                className="btn-ghost"
+                confirmText={`Archive "${category.name}"? Its pockets must be empty first.`}
+                action={archiveCategoryAction}
+                hidden={{ categoryId: category.id }}
               />
-            </div>
-          </FormDialog>
-          <FormDialog
-            triggerLabel="Edit"
-            triggerClassName="btn-secondary"
-            title={`Edit ${category.name}`}
-            submitLabel="Save changes"
-            action={updateCategoryAction}
-            hidden={{ categoryId: category.id }}
-          >
-            <div>
-              <label className="label">Name</label>
-              <input
-                name="name"
-                aria-label="Category name"
-                className="input"
-                defaultValue={category.name}
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="label">Description (optional)</label>
-              <input
-                name="description"
-                aria-label="Category description"
-                className="input"
-                defaultValue={category.description ?? ""}
-              />
-            </div>
-          </FormDialog>
-          <ConfirmButton
-            label="Archive"
-            className="btn-ghost"
-            confirmText={`Archive "${category.name}"? Its pockets must be empty first.`}
-            action={archiveCategoryAction}
-            hidden={{ categoryId: category.id }}
-          />
-          <CreatePocketButton categoryId={category.id} className="btn-secondary" />
+              <CreatePocketButton categoryId={category.id} className="btn-secondary" />
+            </>
+          )}
         </div>
       </div>
 
@@ -137,8 +144,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
         <h2 className="text-lg font-semibold">Pockets</h2>
         {live.length === 0 ? (
           <div className="card flex flex-col items-center gap-3 py-8 text-center text-muted">
-            <p>No pockets here yet.</p>
-            <CreatePocketButton categoryId={category.id} className="btn-primary" />
+            <p>{isArchived ? "This category is archived." : "No pockets here yet."}</p>
+            {!isArchived && <CreatePocketButton categoryId={category.id} className="btn-primary" />}
           </div>
         ) : (
           live.map((p) => <PocketRow key={p.id} pocket={p} transferTargets={transferTargets} />)
@@ -149,7 +156,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">History</h2>
           {closed.map((p) => (
-            <div key={p.id} className="card flex items-center justify-between">
+            <div key={p.id} className="card flex flex-wrap items-center justify-between gap-3">
               <div className="opacity-70">
                 <span className="font-medium">{p.name}</span>{" "}
                 <span className="text-sm text-muted">{formatCents(p.currentBalanceCents)}</span>
@@ -187,7 +194,7 @@ function PocketRow({
       : "";
   return (
     <div className={`card ${accent}`}>
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold">{pocket.name}</h3>
           {pocket.isOverflow ? (

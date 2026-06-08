@@ -2,8 +2,10 @@ import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createHash, randomBytes } from "node:crypto";
+import { normalizeHumanName } from "@/domain/names";
 import { prisma } from "@/lib/prisma";
 import { createDefaultUserData } from "@/server/services/onboarding";
+import { DEMO_USER_EMAIL } from "@/config/mockBank";
 
 export const SESSION_COOKIE_NAME = "autobudget_session";
 const SESSION_DAYS = 14;
@@ -120,7 +122,7 @@ export async function createUserAccount(input: {
   }
 
   const passwordHash = await hashPassword(input.password);
-  const displayName = input.displayName?.trim() || null;
+  const displayName = input.displayName ? normalizeHumanName(input.displayName) || null : null;
 
   try {
     const user = await prisma.$transaction(async (tx) => {
@@ -209,9 +211,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
 
-  const user = await getCurrentUserForSessionToken(token);
-  if (!user) await clearSessionCookie();
-  return user;
+  return getCurrentUserForSessionToken(token);
 }
 
 export async function requireCurrentUser(): Promise<CurrentUser> {
@@ -243,7 +243,7 @@ export async function updateCurrentUserProfile(input: {
   userId: string;
   displayName?: string;
 }) {
-  const displayName = input.displayName?.trim() || null;
+  const displayName = input.displayName ? normalizeHumanName(input.displayName) || null : null;
   return prisma.user.update({
     where: { id: input.userId },
     data: { displayName },
@@ -270,4 +270,63 @@ export async function changeCurrentUserPassword(input: {
     where: { id: input.userId },
     data: { passwordHash: await hashPassword(input.newPassword) },
   });
+}
+
+export async function deleteUserAccount(input: {
+  userId: string;
+  currentPassword: string;
+  confirmation: string;
+}) {
+  if (input.confirmation !== "DELETE") {
+    throw new AuthError("Type DELETE to confirm account deletion.");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: input.userId } });
+  if (!user) throw new AuthError("Account not found.");
+  if (user.email === DEMO_USER_EMAIL) {
+    throw new AuthError("The demo account cannot be deleted.");
+  }
+  if (!(await verifyPassword(input.currentPassword, user.passwordHash))) {
+    throw new AuthError("Current password is incorrect.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const plans = await tx.fundingPlan.findMany({
+      where: { userId: input.userId },
+      select: { id: true },
+    });
+    const planIds = plans.map((plan) => plan.id);
+    const batches = await tx.moneyMovementBatch.findMany({
+      where: { userId: input.userId },
+      select: { id: true },
+    });
+    const batchIds = batches.map((batch) => batch.id);
+
+    await tx.session.deleteMany({ where: { userId: input.userId } });
+    if (batchIds.length) {
+      await tx.moneyMovement.deleteMany({ where: { batchId: { in: batchIds } } });
+    }
+    await tx.moneyMovementBatch.deleteMany({ where: { userId: input.userId } });
+    if (planIds.length) {
+      await tx.fundingRule.deleteMany({ where: { fundingPlanId: { in: planIds } } });
+    }
+    await tx.fundingPlan.deleteMany({ where: { userId: input.userId } });
+    await tx.activityLog.deleteMany({ where: { userId: input.userId } });
+    await tx.notification.deleteMany({ where: { userId: input.userId } });
+    await tx.transaction.deleteMany({ where: { userId: input.userId } });
+    await tx.job.deleteMany({ where: { userId: input.userId } });
+    await tx.pocket.deleteMany({ where: { userId: input.userId } });
+    await tx.category.deleteMany({ where: { userId: input.userId } });
+    await tx.account.deleteMany({ where: { userId: input.userId } });
+    await tx.user.delete({ where: { id: input.userId } });
+  });
+}
+
+export async function deleteCurrentUserAccount(input: {
+  userId: string;
+  currentPassword: string;
+  confirmation: string;
+}) {
+  await deleteUserAccount(input);
+  await clearSessionCookie();
 }

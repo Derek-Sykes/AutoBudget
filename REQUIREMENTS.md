@@ -1,4 +1,4 @@
-# SetAside Requirements
+# AutoBudget Requirements
 
 This file is the source of truth for the simulation-only MVP.
 
@@ -28,6 +28,8 @@ Free to Spend is derived from stored balances. It must not be independently stor
 - All protected pages and server actions must resolve the user from the current session.
 - Every query and mutation must be scoped to the authenticated user.
 - Do not trust form or route ids without verifying ownership by user id.
+- Non-demo users may hard-delete their own account after entering their current password and typing `DELETE`.
+- The seeded demo account must not be deletable.
 
 ## Money Rules
 
@@ -36,7 +38,8 @@ Free to Spend is derived from stored balances. It must not be independently stor
 - Do not use floating point for stored balances or allocation results.
 - Prevent negative Main Account balances.
 - Prevent negative pocket balances.
-- Prevent actions that would make derived Free to Spend negative.
+- Prevent normal actions that would make derived Free to Spend negative.
+- Paycheck correction may make derived Free to Spend negative only when old paycheck money is no longer available. This exception must never make a pocket negative.
 - Categories are grouping/allocation containers and may hold unallocated cents only where the current schema explicitly supports it.
 - Pockets hold set-aside money.
 
@@ -59,12 +62,18 @@ Payback/refund deposits are returning money. They should restore prior movements
 
 Manual adjustments are correction entries. They require a note and must not auto-disperse.
 
+Paycheck corrections must create new ledger history instead of editing or deleting the original paycheck. Payroll-generated paycheck corrections may optionally update the job amount for future paychecks only.
+
 ## Funding And Allocation
 
 - Funding percentages are represented in basis points.
 - Top-level category plus Free to Spend allocation must total 100%.
 - A category's pocket splits may total less than or equal to 100%.
 - Category remainders, capped-pocket overflow, and unplaceable category money should route to that category's Overflow pocket when one exists.
+- Users must not create, edit, archive, purchase, or cancel an Overflow pocket directly.
+- Users may transfer money to and from active Overflow pockets.
+- Archived categories must hide/archive their Overflow pocket from active flows, and new pockets must not be created inside archived categories.
+- When a category changes from 0% to a positive allocation and all active normal pocket allocations are 0%, saving the plan should split active normal pockets evenly.
 - Allocation must conserve every cent.
 - Allocation must cap pockets at their remaining target capacity.
 - Fully funded pockets should be skipped for additional auto-allocation.
@@ -75,13 +84,16 @@ Manual adjustments are correction entries. They require a note and must not auto
 - Category and pocket creation/editing/archive flows.
 - Manual set-aside to pockets and categories.
 - Paycheck deposit and auto-disperse.
-- Funding-plan editor.
+- Paycheck correction.
+- Funding-plan editor with auto-even split for newly funded zeroed categories.
 - Transfers between pockets, Free to Spend, and categories.
 - Payback/refund restore.
 - Purchase and cancel pocket flows.
 - Manual adjustment service.
 - Recurring jobs and payroll catch-up.
+- Account deletion for non-demo users.
 - Notifications, activity history, and safe reversal controls.
+- In-app confirmation dialogs for destructive actions.
 
 ## Validation
 

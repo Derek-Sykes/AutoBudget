@@ -14,7 +14,7 @@ export default async function Home() {
         </p>
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Set money aside before you spend it.</h1>
         <p className="text-lg leading-8 text-muted">
-          SetAside keeps one clear number for what is truly free to spend, while your categories
+          AutoBudget keeps one clear number for what is truly free to spend, while your categories
           and pockets organize the money you have already committed.
         </p>
       </div>

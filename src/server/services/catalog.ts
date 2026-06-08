@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { Tx } from "@/lib/prisma";
+import { normalizeHumanName } from "@/domain/names";
 import { LedgerError } from "./ledger";
 import { logActivity } from "./activity";
 import { isFullyFunded } from "@/domain/money";
@@ -28,7 +29,7 @@ export async function createCategory(input: {
   name: string;
   description?: string;
 }) {
-  const name = input.name.trim();
+  const name = normalizeHumanName(input.name);
   if (!name) throw new LedgerError("Category name is required.");
 
   return prisma.$transaction(async (tx) => {
@@ -108,7 +109,7 @@ export async function updateCategory(input: {
 
     const data: Record<string, unknown> = {};
     if (input.name !== undefined) {
-      const name = input.name.trim();
+      const name = normalizeHumanName(input.name);
       if (!name) throw new LedgerError("Category name is required.");
       data.name = name;
     }
@@ -146,13 +147,16 @@ const TYPES_REQUIRING_TARGET: PocketType[] = [
 ];
 
 export async function createPocket(input: CreatePocketInput) {
-  const name = input.name.trim();
+  const name = normalizeHumanName(input.name);
   if (!name) throw new LedgerError("Pocket name is required.");
 
   const category = await prisma.category.findFirst({
     where: { id: input.categoryId, userId: input.userId },
   });
   if (!category) throw new LedgerError("Category not found.");
+  if (category.status !== "active") {
+    throw new LedgerError("You can't create a pocket inside an archived category.");
+  }
 
   const pocketType = input.pocketType ?? "one_time_goal";
   if (!POCKET_TYPES.includes(pocketType)) throw new LedgerError("Invalid pocket type.");
@@ -215,7 +219,7 @@ export async function updatePocket(input: UpdatePocketInput) {
 
     const data: Record<string, unknown> = {};
     if (input.name !== undefined) {
-      const name = input.name.trim();
+      const name = normalizeHumanName(input.name);
       if (!name) throw new LedgerError("Pocket name is required.");
       data.name = name;
     }

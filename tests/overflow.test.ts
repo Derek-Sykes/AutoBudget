@@ -4,9 +4,12 @@ import {
   archiveCategory,
   createCategory,
   createPocket,
+  setPocketStatus,
 } from "@/server/services/catalog";
 import { addPaycheck } from "@/server/services/paycheck";
 import { setAsideToPocket } from "@/server/services/moneyMovement";
+import { transfer } from "@/server/services/transfer";
+import { getTransferTargets } from "@/server/queries";
 import { purchasePocket, cancelPocket } from "@/server/services/purchaseCancel";
 import { LedgerError } from "@/server/services/ledger";
 import { makeFundingPlan, seedUser } from "./factories";
@@ -36,6 +39,16 @@ describe("Overflow pocket lifecycle", () => {
     ).rejects.toThrow(LedgerError);
   });
 
+  it("rejects archiving the Overflow pocket directly", async () => {
+    const { userId } = await seedUser();
+    const cat = await createCategory({ userId, name: "Travel" });
+    const overflow = await overflowOf(cat.id);
+
+    await expect(
+      setPocketStatus({ userId, pocketId: overflow.id, status: "archived" }),
+    ).rejects.toThrow(LedgerError);
+  });
+
   it("can't be purchased or cancelled", async () => {
     const { userId } = await seedUser();
     const cat = await createCategory({ userId, name: "Travel" });
@@ -44,6 +57,38 @@ describe("Overflow pocket lifecycle", () => {
       purchasePocket({ userId, pocketId: overflow.id, purchaseAmountCents: 100 }),
     ).rejects.toThrow(LedgerError);
     await expect(cancelPocket({ userId, pocketId: overflow.id })).rejects.toThrow(LedgerError);
+  });
+
+  it("can transfer to and from the Overflow pocket", async () => {
+    const { userId } = await seedUser(500_000);
+    const cat = await createCategory({ userId, name: "Travel" });
+    const overflow = await overflowOf(cat.id);
+    const spain = await createPocket({
+      userId,
+      categoryId: cat.id,
+      name: "Spain",
+      targetAmountCents: 100_000,
+    });
+
+    await setAsideToPocket({ userId, pocketId: spain.id, amountCents: 40_000 });
+    await transfer({
+      userId,
+      sourcePocketId: spain.id,
+      destinationType: "pocket",
+      destinationId: overflow.id,
+      amountCents: 15_000,
+    });
+    expect((await pocket(overflow.id)).currentBalanceCents).toBe(15_000);
+
+    await transfer({
+      userId,
+      sourcePocketId: overflow.id,
+      destinationType: "pocket",
+      destinationId: spain.id,
+      amountCents: 5_000,
+    });
+    expect((await pocket(overflow.id)).currentBalanceCents).toBe(10_000);
+    expect((await pocket(spain.id)).currentBalanceCents).toBe(30_000);
   });
 });
 
@@ -114,5 +159,24 @@ describe("archiveCategory with Overflow", () => {
     await archiveCategory({ userId, categoryId: cat.id });
     expect((await prisma.category.findUniqueOrThrow({ where: { id: cat.id } })).status).toBe("archived");
     expect((await overflowOf(cat.id)).status).toBe("archived");
+    const targets = await getTransferTargets(userId);
+    const archivedOverflow = await overflowOf(cat.id);
+    expect(targets.categories.some((target) => target.id === cat.id)).toBe(false);
+    expect(targets.pockets.some((target) => target.id === archivedOverflow.id)).toBe(false);
+  });
+
+  it("rejects creating a pocket inside an archived category", async () => {
+    const { userId } = await seedUser();
+    const cat = await createCategory({ userId, name: "Travel" });
+    await archiveCategory({ userId, categoryId: cat.id });
+
+    await expect(
+      createPocket({
+        userId,
+        categoryId: cat.id,
+        name: "Spain",
+        targetAmountCents: 100_000,
+      }),
+    ).rejects.toThrow(LedgerError);
   });
 });
