@@ -1,162 +1,140 @@
-# SetAside — Bank App (simulation-only MVP)
+# SetAside / AutoBudget
 
-A budgeting web app built around one idea:
+SetAside is a simulation-only budgeting MVP from the `Derek-Sykes/AutoBudget` GitHub repo. It helps each logged-in user set money aside into virtual categories and pockets before spending, so the app can show what is truly free to spend.
 
+Core rule:
+
+```txt
+Free to Spend = Main Account Balance - Set Aside
 ```
-Main Account Balance − money set aside in pockets = Free to Spend
-```
 
-You "fake buy" things by setting money aside into virtual pockets/goals before
-you actually spend it, so you always know what's *truly* free to spend. This MVP
-is **simulation only** — there is no bank linking, no Plaid, no real money
-movement. The Main Account balance comes from one hardcoded config constant.
+The app has local email/password accounts for development use. There is no OAuth, Plaid, bank linking, transaction sync, or real money movement in the MVP.
 
 ## Stack
 
-Next.js (App Router) · TypeScript · Prisma · SQLite · Zod · Tailwind CSS · Vitest
+- Next.js 15 App Router and React 19
+- TypeScript
+- Prisma 6 with SQLite
+- Zod
+- Tailwind CSS 3
+- Vitest
 
-## Quick start
+## Quick Start
 
-```bash
-npm install
-npm run db:push      # create the SQLite schema (prisma/dev.db)
-npm run db:seed      # load the demo user + categories + pockets + funding plan
-npm run dev          # http://localhost:3100
+```powershell
+npm ci
+Copy-Item .env.example .env
+npm run db:reset
+npm run dev
 ```
 
-There is no auth in the MVP (deferred per the build guide). The whole app runs
-as a single seeded demo user (`demo@example.com`).
+The dev server runs on http://localhost:3100.
 
-## Configuration
+Seeded local demo login:
 
-The simulated starting balance lives in one obvious place,
-[`src/config/mockBank.ts`](src/config/mockBank.ts):
-
-```ts
-export const MOCK_MAIN_ACCOUNT_STARTING_BALANCE_CENTS = 500_000; // $5,000.00
+```txt
+email: demo@autobudget.local
+password: password123
 ```
 
-You can override it for local dev via an env var in `.env`:
+These demo credentials are for local development only. Do not treat them as production-safe.
 
-```
+## Environment
+
+Create `.env` from `.env.example` before running Prisma or the app:
+
+```dotenv
+DATABASE_URL="file:./dev.db"
 MOCK_MAIN_ACCOUNT_STARTING_BALANCE_CENTS=500000
 ```
 
-`DATABASE_URL` (in `.env`) points at the SQLite file (`file:./dev.db`).
+`DATABASE_URL="file:./dev.db"` creates `prisma/dev.db`. SQLite database files and `.env` are ignored by Git.
+
+`MOCK_MAIN_ACCOUNT_STARTING_BALANCE_CENTS` is optional. If it is absent, the app uses `MOCK_MAIN_ACCOUNT_STARTING_BALANCE_CENTS = 500_000` from `src/config/mockBank.ts`.
+
+## App Routes
+
+- `/dashboard` - balance summary, category cards, recent income, and add-money actions
+- `/categories/[id]` - category detail, pocket actions, set-aside, transfers, purchase/cancel, edit/archive flows
+- `/jobs` - recurring income sources and payroll catch-up controls
+- `/funding-plan` - paycheck allocation plan editor
+- `/activity` - notifications, activity history, and safe reversal controls
+- `/account` - display name, password change, and logout
+- `/login` and `/signup` - local account access
+
+`/` is public. Protected app routes redirect unauthenticated users to `/login`.
 
 ## Scripts
 
-| Script | What it does |
+| Script | Purpose |
 | --- | --- |
-| `npm run dev` | Start the dev server on port 3100 |
-| `npm run build` | Production build + type check |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Run the Vitest suite |
-| `npm run db:push` | Sync the Prisma schema to SQLite |
-| `npm run db:seed` | Reset demo data to a pristine state |
+| `npm run dev` | Start Next.js on port 3100 |
+| `npm run build` | Build the production app |
+| `npm run start` | Start the built app |
+| `npm run lint` | Run ESLint |
+| `npm run typecheck` | Run TypeScript with `--noEmit` |
+| `npm test` | Run Vitest once |
+| `npm run test:watch` | Run Vitest in watch mode |
+| `npm run db:push` | Run Prisma `db push` against the configured database |
+| `npm run db:generate` | Generate Prisma Client |
+| `npm run db:seed` | Seed demo data |
+| `npm run db:reset` | Force-reset SQLite schema and seed demo data |
 
-## How the money model works
+## Current MVP
 
-- **All money is integer cents.** No floating point is ever used for balances.
-  Percentages use **basis points** (10000 = 100%).
-- **Free to Spend is derived**, never stored: `mainBalance − setAside`.
-  Set Aside = sum of active/paused/fully-funded pocket balances (+ category
-  unallocated).
-- **Ledger-first.** Every balance change goes through a `MoneyMovementBatch`
-  with atomic `MoneyMovement` rows ([`src/server/services/ledger.ts`](src/server/services/ledger.ts)).
-  A single guarded effect function applies and reverses balance changes, so
-  no balance can ever go negative and every action is reversible.
-- **Two kinds of deposits are kept distinct** (a non-negotiable rule):
-  - *Paycheck / income* is new money — it can auto-disperse through the funding
-    plan.
-  - *Payback / refund* is returning money — it restores the prior movement (or
-    a chosen destination) and never auto-disperses.
+The GitHub checkout currently includes:
 
-## Architecture
+- one simulated Main Account per user
+- local email/password accounts with hashed passwords and expiring HTTP-only session cookies
+- seeded development demo account
+- mock starting balance configuration
+- dashboard balances with derived Free to Spend
+- categories, pockets, overflow pockets, and category unallocated amounts
+- manual set-aside into a pocket or whole category
+- paycheck deposits with preview and auto-disperse through the funding plan
+- funding-plan editor with category and pocket percentages in basis points
+- transfers from pocket to pocket, Free to Spend, or whole category
+- payback/refund restoration
+- purchase and cancel pocket flows
+- manual adjustment deposit type
+- recurring jobs and payroll catch-up with idempotent paycheck generation
+- notifications, activity history, and safe reversal of clean batches
+- Prisma schema, seed script, service layer, server actions, app routes, and tests
 
-```
-src/
-  config/mockBank.ts        Hardcoded starting balance constant
-  domain/                   Pure, unit-tested logic (no IO)
-    money.ts                cents parsing/formatting, free-to-spend, fully-funded
-    allocation.ts           paycheck allocation engine (largest-remainder, capping)
-    types.ts                enum-like unions + movement → balance-effect map
-  server/
-    services/
-      ledger.ts             applyBatch / reverseBatch (the only balance mutator)
-      balanceService.ts     dashboard balances (derived Free to Spend)
-      moneyMovement.ts      manual set-aside + reallocation
-      paycheck.ts           paycheck deposit + preview + auto-disperse
-      payback.ts            payback/refund restore
-      purchaseCancel.ts     mark-as-bought + cancel/reallocate
-      reversal.ts           safe undo of a clean batch
-      funding.ts            build the active plan for the engine
-      catalog.ts            category/pocket CRUD
-      activity.ts           activity log + notifications
-    queries.ts              read models for the pages
-    currentUser.ts          seeded demo user (stands in for auth)
-  app/
-    actions.ts              server actions (validate → service → revalidate)
-    dashboard/              balances + category cards
-    categories/[id]/        pockets + set-aside / buy / cancel
-    activity/               history, notifications, reversal
-  components/               dialogs + presentational bits
-tests/                      money + allocation (pure) and service integration tests
-```
+## Money Rules
 
-## What's implemented (MVP)
+- Store money as integer cents.
+- Use basis points for percentages.
+- Derive Free to Spend instead of storing it.
+- Route every balance-changing action through the ledger in `src/server/services/ledger.ts`.
+- Create `MoneyMovementBatch` and `MoneyMovement` rows for balance changes.
+- Write `ActivityLog` entries for user-readable history.
+- Prevent negative Main Account, pocket, and Free to Spend states.
+- Keep paycheck/income deposits distinct from payback/refund deposits.
+- Reverse by creating opposite movement batches; do not delete or rewrite old ledger rows.
 
-- Single simulated Main Account from a hardcoded constant
-- Dashboard: Main Balance, Set Aside, derived Free to Spend, category cards
-- Categories & pockets — create, **edit** (rename, goal, Target Buy Date, Lock
-  Until), **pause/resume**, **archive**, and **edit/archive categories**
-- Manual set-aside (Free to Spend → pocket)
-- Fund a whole category from Free to Spend — auto-distributes across its pockets
-  by the funding plan (capped at goals, remainder → Overflow), like a paycheck
-- Paycheck/income deposit with **preview** and auto-disperse (capping + overflow)
-- **Funding-plan editor**: adjust category & pocket percentages in-app with live
-  validation (top level must total 100%; a category's pockets may total ≤100%,
-  remainder → Overflow) — no re-seed, no data loss
-- **Overflow pocket**: every category has an auto-managed catch-all pocket that
-  captures whatever a category can't place in its other pockets (sub-100% pocket
-  splits, capped/full pockets, or a category with no other pockets) instead of
-  spilling to Free to Spend
-- **Transfers**: move money from a pocket to another pocket, to Free to Spend, or
-  to a whole category (which auto-distributes it just like a paycheck would)
-- Payback/refund deposit: restore to Free to Spend, a chosen pocket, or exact
-  restore of a linked purchase (with over-payback blocking)
-- Manual adjustment deposit type — correct the simulated balance (requires a
-  note, never auto-disperses, decrease capped at Free to Spend)
-- **Recurring jobs / payroll engine**: multiple income sources (weekly, biweekly,
-  monthly, semi-monthly), after-tax net pay in cents, active/paused/archived,
-  per-job auto-disperse. A deterministic catch-up (run on every money-page load,
-  no 24/7 process needed) posts one **idempotent** paycheck per missed pay date
-  through the existing paycheck flow — key `payroll:<jobId>:<YYYY-MM-DD>` on the
-  ledger's unique constraint guarantees no duplicates on refresh/twice/multi-tab.
-  Jobs page (CRUD, next/last paycheck, "Check now") + dashboard income card
-  (next paycheck across jobs + estimated monthly income)
-- Notifications: unread count badge in the nav, mark-read, mark-all-read, clear
-- Mark as bought (with leftover release / Free-to-Spend shortfall) and cancel
-- Fully-funded detection + notifications
-- Activity history + money-movement ledger
-- Safe reversal of clean batches (blocks double reversal & negative balances)
-- Idempotent deposits
+## Project Docs
 
-## Deferred (future phases)
+- `REQUIREMENTS.md` - source of truth for MVP behavior
+- `docs/SETUP.md` - fresh-checkout setup, env, database, and troubleshooting
+- `docs/TESTING.md` - verification commands and test coverage notes
+- `AGENTS.md` - coding-agent rules for the repo
 
-Auth, Plaid/bank linking, multiple real accounts, projections/wage calculator,
-monthly-budget reset engine, priority/deadline funding modes, manual-adjustment
-UI, and the full repair flow for un-cleanly-reversible batches.
+## Verification
 
-## Testing
+Recommended local check:
 
-```bash
+```powershell
+npm run db:reset
+npm run typecheck
 npm test
+npm run build
 ```
 
-The suite (85 tests) covers the money rules end to end: cents math, the allocation engine
-(rounding, capping, conservation), Free-to-Spend derivation, set-aside guards,
-paycheck auto-disperse (on/off, idempotency, $0/negative blocks), payback
-restore modes, purchase/cancel, and safe reversal (clean undo, double-reversal
-block, already-spent block). Pure logic is tested directly; services run against
-a dedicated `prisma/test.db`.
+The current test suite covers pure money/allocation logic, service-level money flows, local auth behavior, and user-isolation checks against a dedicated SQLite test database.
+
+Note: `npm run db:reset` is destructive. It uses `scripts/reset-db.mjs` to delete and recreate the configured SQLite database because direct `prisma db push` currently fails in this Windows workspace with a schema-engine error after schema validation succeeds.
+
+## Deferred Scope
+
+Deferred work includes OAuth/social login, email verification, password reset, Plaid/bank linking, multiple real accounts, real money movement, transaction sync, projections, a full wage calculator, monthly-budget reset automation, priority/deadline funding modes, manual-adjustment UI polish, and repair flows for non-clean reversals.

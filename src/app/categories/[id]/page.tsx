@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCurrentUserId } from "@/server/currentUser";
+import { requireCurrentUserId } from "@/server/currentUser";
 import { getCategoryDetail, getTransferTargets } from "@/server/queries";
 import { CreatePocketButton } from "@/components/CatalogButtons";
 import { PocketActions } from "@/components/PocketActions";
@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CategoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const userId = await getCurrentUserId();
+  const userId = await requireCurrentUserId();
   const [data, transferTargets] = await Promise.all([
     getCategoryDetail(userId, id),
     getTransferTargets(userId),

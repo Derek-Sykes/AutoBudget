@@ -13,7 +13,7 @@ export default function setup() {
     if (existsSync(p)) rmSync(p);
   }
 
-  execSync("npx prisma db push --skip-generate", {
+  execSync("node scripts/reset-db.mjs --skip-seed --skip-generate", {
     stdio: "inherit",
     env: { ...process.env, DATABASE_URL: "file:./test.db" },
   });

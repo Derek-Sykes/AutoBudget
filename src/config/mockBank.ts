@@ -19,5 +19,6 @@ export function getMockStartingBalanceCents(): number {
   return MOCK_MAIN_ACCOUNT_STARTING_BALANCE_CENTS;
 }
 
-export const DEMO_USER_EMAIL = "demo@example.com";
+export const DEMO_USER_EMAIL = "demo@autobudget.local";
+export const DEMO_USER_PASSWORD = "password123";
 export const MAIN_ACCOUNT_NAME = "Main Account";

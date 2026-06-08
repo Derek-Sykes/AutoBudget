@@ -48,17 +48,29 @@ export function FundingPlanEditor({ data }: { data: FundingPlanEditorData }) {
   // Build the bp model + detect any unparseable field.
   const model = useMemo(() => {
     const ftsBp = pctStringToBp(freeToSpend);
-    let anyInvalid = ftsBp === null;
-    const cats = categories.map((c) => {
+    const parsedCategories = categories.map((c) => {
       const weightBp = pctStringToBp(c.weight);
-      if (weightBp === null) anyInvalid = true;
       const pockets = c.pockets.map((p) => {
         const bp = pctStringToBp(p.weight);
-        if (bp === null) anyInvalid = true;
-        return { pocketId: p.pocketId, name: p.name, weightBp: bp ?? 0 };
+        return { pocketId: p.pocketId, name: p.name, weightBp: bp };
       });
-      return { categoryId: c.categoryId, name: c.name, weightBp: weightBp ?? 0, pockets };
+      return { categoryId: c.categoryId, name: c.name, weightBp, pockets };
     });
+    const anyInvalid =
+      ftsBp === null ||
+      parsedCategories.some(
+        (c) => c.weightBp === null || c.pockets.some((p) => p.weightBp === null),
+      );
+    const cats = parsedCategories.map((c) => ({
+      categoryId: c.categoryId,
+      name: c.name,
+      weightBp: c.weightBp ?? 0,
+      pockets: c.pockets.map((p) => ({
+        pocketId: p.pocketId,
+        name: p.name,
+        weightBp: p.weightBp ?? 0,
+      })),
+    }));
     const input: PlanWeightsInput = { freeToSpendBp: ftsBp ?? 0, categories: cats };
     return { input, anyInvalid };
   }, [freeToSpend, categories]);

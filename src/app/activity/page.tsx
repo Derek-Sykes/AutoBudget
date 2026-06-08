@@ -1,4 +1,4 @@
-import { getCurrentUserId } from "@/server/currentUser";
+import { requireCurrentUserId } from "@/server/currentUser";
 import { getActivityFeed } from "@/server/queries";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import {
@@ -31,7 +31,7 @@ function when(d: Date) {
 }
 
 export default async function ActivityPage() {
-  const userId = await getCurrentUserId();
+  const userId = await requireCurrentUserId();
   const { logs, notifications, reversibleBatches } = await getActivityFeed(userId);
 
   return (

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 // Wipe all tables before each test so cases are isolated. Order respects
 // foreign keys (children first).
 beforeEach(async () => {
+  await prisma.session.deleteMany();
   await prisma.moneyMovement.deleteMany();
   await prisma.moneyMovementBatch.deleteMany();
   await prisma.fundingRule.deleteMany();

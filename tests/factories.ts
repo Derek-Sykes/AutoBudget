@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import type { JobStatus, PayFrequency, PocketStatus, PocketType } from "@/domain/types";
 
@@ -6,7 +7,11 @@ const uniq = () => `${Date.now()}-${counter++}`;
 
 export async function seedUser(balanceCents = 500_000) {
   const user = await prisma.user.create({
-    data: { email: `user-${uniq()}@test.dev`, displayName: "Tester" },
+    data: {
+      email: `user-${uniq()}@test.dev`,
+      displayName: "Tester",
+      passwordHash: await bcrypt.hash("password123", 4),
+    },
   });
   const account = await prisma.account.create({
     data: {

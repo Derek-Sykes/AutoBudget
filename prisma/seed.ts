@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import {
   DEMO_USER_EMAIL,
+  DEMO_USER_PASSWORD,
   MAIN_ACCOUNT_NAME,
   getMockStartingBalanceCents,
 } from "../src/config/mockBank";
@@ -11,6 +13,7 @@ const prisma = new PrismaClient();
 const usd = (dollars: number) => dollars * 100;
 
 async function reset() {
+  await prisma.session.deleteMany();
   await prisma.moneyMovement.deleteMany();
   await prisma.moneyMovementBatch.deleteMany();
   await prisma.fundingRule.deleteMany();
@@ -28,8 +31,9 @@ async function reset() {
 async function main() {
   await reset();
 
+  const passwordHash = await bcrypt.hash(DEMO_USER_PASSWORD, 12);
   const user = await prisma.user.create({
-    data: { email: DEMO_USER_EMAIL, displayName: "Demo User" },
+    data: { email: DEMO_USER_EMAIL, displayName: "Demo User", passwordHash },
   });
 
   await prisma.account.create({

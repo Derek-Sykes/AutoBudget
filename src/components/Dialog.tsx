@@ -31,12 +31,9 @@ export function SubmitButton({
 
 export function Overlay({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const openerRef = useRef<HTMLElement | null>(null);
-  // Capture the triggering element during the first render — before the dialog's
-  // autoFocus runs in commit — so we can return focus to it on close.
-  if (openerRef.current === null && typeof document !== "undefined") {
-    openerRef.current = document.activeElement as HTMLElement | null;
-  }
+  const [opener] = useState<HTMLElement | null>(() =>
+    typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null),
+  );
   const titleId = useId();
 
   useEffect(() => {
@@ -79,12 +76,11 @@ export function Overlay({ title, onClose, children }: { title: string; onClose: 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       // Return focus to whatever opened the dialog, if it's still in the DOM.
-      const opener = openerRef.current;
       if (opener && typeof opener.focus === "function" && document.contains(opener)) {
         opener.focus();
       }
     };
-  }, [onClose]);
+  }, [onClose, opener]);
 
   return (
     <div

@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/jobs", label: "Jobs" },
   { href: "/funding-plan", label: "Funding plan" },
   { href: "/activity", label: "Activity" },
+  { href: "/account", label: "Account" },
 ];
 
 export function NavLinks({ unreadCount = 0 }: { unreadCount?: number }) {
